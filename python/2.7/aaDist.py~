@@ -54,5 +54,4 @@ for fr in univ.trajectory:
   pairDist = mda_dist.distance_array(SL.get_positions(),SL.get_positions())
   print(pairDist.shape)
   print(SL.masses())
-  print("indices:\n",SL.indices())
 
