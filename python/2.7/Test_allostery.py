@@ -7,20 +7,21 @@ Date: 2014-09-16
 # Compatibility with Python 3
 #============================================================
 from __future__ import print_function, division
+from nose.tools import with_setup
+import allostery
+import nose
+import numpy
+import scipy
+import os
+import unittest
 #============================================================
 
 #============================================================
 # Dependencies
 #============================================================
-import os
-import unittest
-import nose
-from nose.tools import with_setup
-import numpy, scipy
 #--------------------------------------------------
 # testing target  module
 #--------------------------------------------------
-import allostery
 #============================================================
 
 class TestAllostery(unittest.TestCase):
@@ -33,25 +34,32 @@ class TestAllostery(unittest.TestCase):
     data_dir = "data"
     case = 2
     if case == 1:
-      trajectory_name = "sod.pdb"
+      trajectory_name = "sod.dcd"
       psf_name = "sod.psf"
+      self.resid_list = (121, 122)
+      self.segid_list = ['O1']
+      self.extra_criteria = "not name H*"
+      self.answer_key_filename = "sod_comdist.dat"
     elif case == 2:
-      trajectory_name = "segA3.dcd"
+      trajectory_name = "segA3.pdb"
       psf_name = "segA3.psf"
+      self.resid_list = (41, 42, 43)
+      self.segid_list = ['A']
+      self.extra_criteria = "not name H*"
+      self.answer_key_filename = "segA3_comdist.dat"
     elif case == 3:
       trajectory_name = "segA.pdb"
       psf_name = "segA.psf"
 
-    data_dir = os.path.realpath(data_dir)
-    self.my_trajectory = os.path.join(data_dir, trajectory_name)
-    self.my_psf = os.path.join(data_dir, psf_name)
-    self.allos = allostery.Allostery(data_dir, self.my_psf, self.my_trajectory)
+    self.data_dir = os.path.realpath(data_dir)
+    self.my_trajectory = os.path.join(self.data_dir, trajectory_name)
+    self.my_psf = os.path.join(self.data_dir, psf_name)
+    self.allos = allostery.Allostery(self.data_dir, self.my_psf, self.my_trajectory)
+    self.tol = 1E-5;
     #-------------------
     # for testing
     #------------------------
-    self.resid_list = range(41,43)
-    self.segid_list = ['A']
-    self.extra_criteria = "not name H*"
+
 
   def tearDown(self):
     print("-----Tearing down {0} -------".format(self.__class__.__name__))
@@ -72,15 +80,13 @@ class TestAllostery(unittest.TestCase):
     self.allos.set_basal_selection(self.segid_list, self.extra_criteria)
     self.allos.build_com_coords(self.resid_list, self.segid_list, self.extra_criteria)
     self.assertEqual(numpy.shape(self.allos.com_coords), (N,3))
-  @unittest.skip("")
+      
   def test_build_pair_dist_matrix(self):
-    resid_list = range(41,43)
-    self.allos.build_com_pair_dist_matrix(resid_list, self.segid_list, self.extra_criteria)
-    result = numpy.array([[ 0.        , 4.59339682],
-                          [ 4.59339682,  0.        ]], dtype=numpy.float32)
-    tol = 1E-5;
-    self.assertTrue((numpy.abs(self.allos.com_pair_dist_matrix - result) < tol).all())
-  
+    self.allos.build_com_pair_dist_matrix(self.resid_list, self.segid_list, self.extra_criteria)
+    filename = os.path.join(self.data_dir, self.answer_key_filename)
+    key = numpy.loadtxt(filename)
+    self.assertTrue((numpy.abs(self.allos.com_pair_dist_matrix - key) < self.tol).all())
+    
   def test_get_commute_time(self):
     self.allos.get_commute_time(self.resid_list, self.segid_list, self.extra_criteria)
     print("commute time\n", self.allos.commute_time)
