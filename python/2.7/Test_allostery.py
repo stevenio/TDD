@@ -14,6 +14,7 @@ import numpy
 import scipy
 import os
 import unittest
+import pandas
 #============================================================
 
 #============================================================
@@ -91,6 +92,19 @@ class TestAllostery(unittest.TestCase):
     self.allos.get_commute_time(self.resid_list, self.segid_list, self.extra_criteria)
     print("commute time\n", self.allos.commute_time)
     
+  def test_save_commute_time(self):
+    self.test_get_commute_time()
+    filename = "comm_time"
+    cwd = os.getcwd()
+    myfile = os.path.join(cwd, filename+".h5")
+
+    if os.path.isfile(myfile): # remove previous version
+      os.remove(myfile)
+
+    self.allos.save_commute_time(filename)
+    self.assertTrue(os.path.isfile(myfile))
+    data = pandas.read_hdf(myfile, 'data')
+    print("file content: {0}\n".format(myfile),data.values)
     
 
     

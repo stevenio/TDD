@@ -13,6 +13,7 @@ from __future__ import print_function, division
 # External Module Dependencies
 #============================================================
 import prody
+import pandas
 import MDAnalysis as mda
 import MDAnalysis.core.parallel.distances as mda_dist
 import numpy, scipy
@@ -35,6 +36,7 @@ class Allostery(object):
     self.resid_list   = []
     self.segid_list = False
     self.com_coords = False
+    self.commute_time = numpy.array([])
     
 
   def set_selection_str(self, keyword, member_list):
@@ -123,7 +125,15 @@ class Allostery(object):
     #-----------------------------------
     self.commute_time /= ccc
     
-
+  def save_commute_time(self, filename, output_dir="./"):
+    """
+    Save commute time into [filename].h5
+    """
+    output_data = pandas.DataFrame(self.commute_time, columns=self.resid_list)
+    filename += ".h5"
+    current_dir = os.path.realpath(output_dir) # get current path
+    output_filename = os.path.join(current_dir, filename)
+    output_data.to_hdf(output_filename,'data')
 
 
 
