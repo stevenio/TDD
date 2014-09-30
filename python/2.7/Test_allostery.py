@@ -26,7 +26,7 @@ import pandas
 class TestAllostery(unittest.TestCase):
   
   def setUp(self):
-    print("-----Setting up {0} -------".format(self.__class__.__name__))
+    print("\n-----Setting up {0} -------".format(self.__class__.__name__))
     #------------------------------------------------------------
     # Parameters
     #------------------------------------------------------------
@@ -67,14 +67,14 @@ class TestAllostery(unittest.TestCase):
     self.my_trajectory = os.path.join(self.data_dir, trajectory_name)
     self.my_psf = os.path.join(self.data_dir, psf_name)
     self.allos = allostery.Allostery(self.data_dir, self.my_psf, self.my_trajectory)
-    self.tol = 1E-2;
+    self.tol = 1E-5;
     #-------------------
     # for testing
     #------------------------
 
 
   def tearDown(self):
-    print("-----Tearing down {0} -------".format(self.__class__.__name__))
+    print("-----Tearing down {0} -------\n".format(self.__class__.__name__))
     del self.allos
 
   def test_instantiation(self):
@@ -132,7 +132,7 @@ class TestAllostery(unittest.TestCase):
     self.assertEqual(numpy.shape(self.allos.comMatrix), (N,3))
     self.assertTrue(numpy.abs((self.allos.comMatrix - expected) < self.tol).all())
 
-  @unittest.skip("paircom")
+
   def test_build_pair_dist_com_matrix(self):
     self.test_atom_selection_string()
     print("\t[[[ Testing build_pairwise_dist_com_matrix() ]]]")
@@ -142,17 +142,18 @@ class TestAllostery(unittest.TestCase):
     print("Expected pairComMatrix\n", key)
     self.assertTrue((numpy.abs(self.allos.pairComMatrix - key) < self.tol).all())
 
-  @unittest.skip("tmp")
+
   def test_get_commute_time_matrix(self):
     self.test_atom_selection_string()
     print("\t[[[ Testing get_commute_time_matrix() ]]]")
     self.allos.get_commute_time_matrix()
     print("commute time\n", self.allos.commute_time_matrix)
 
-  @unittest.skip("tmp")
+
   def test_save_commute_time(self):
-    self.test_get_commute_time()
-    filename = "comm_time"
+    self.test_get_commute_time_matrix()
+    print("\t[[[ Testing save_commute_time_matrix() ]]]")
+    filename = "commute_time"
     cwd = os.getcwd()
     myfile = os.path.join(cwd, filename+".h5")
 

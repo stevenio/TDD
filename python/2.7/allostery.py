@@ -137,6 +137,7 @@ class Proxy_MDAnalysis(object):
     Role: select part of the MD system
     :return a data object that should know the coordinates of selected atoms
     """
+    self.selection_string = selection_string
     self.selectedAtoms = self.userData.selectAtoms(selection_string)
     if self.selectedAtoms.numberOfAtoms() == 0:
       msg = "atom selection [{0}] yields zero atoms".format(selection_string)
@@ -177,13 +178,14 @@ class Proxy_MDAnalysis(object):
     Role: calculate the center of mass of residueObj
     :return numpy array [shape: (3,)]
     """
-    _num = 0
+
     self.centerOfMasses = numpy.zeros((self.get_numberResiduesSelected(), 3), dtype=numericType)
     for _ccc in range(0,self.get_numberResiduesSelected()):
-      _residue = self.selectedAtoms.residues[_ccc].selectAtoms("not name H*")
+      # note: due to a bug in the implementation of MDAnalysis,
+      #       self.selectedAtoms.residues[0] will return all the atoms in residue0
+      #       of the original PDB, not from the selected atom set self.selectedAtoms
+      _residue = self.selectedAtoms.residues[_ccc].selectAtoms(self.selection_string)
       self.centerOfMasses[_ccc,:] = _residue.centerOfMass()
-      _num += _residue.numberOfAtoms()
-    print("****** number of atoms during COM",_num)
     return self.centerOfMasses
 
   def next_frame(self):
@@ -196,6 +198,7 @@ class Proxy_MDAnalysis(object):
       self.userData.trajectory[self.current_frameId]
     else:
       msg = "Already reached the last frame!"
+      msg += "(current frameId = {0}/{1})".format(self.current_frameId, self.total_numFrames)
       raise UserWarning(msg)
 
 
@@ -310,46 +313,6 @@ class AnalysisTools(object):
     # instead of the MDAnalysis.core.parallel.distances (which requires inputs to be of Cython DTYPE_t type)
     return mda.core.distances.distance_array(com_matrix, com_matrix)
 
-  @classmethod
-  def get_commute_time(cls, ):
-    """
-    build commute time matrix based on pair-wise com distance matrix
-    """
-
-    ccc = 0 # frame counter
-    for fr in self.universe.trajectory:
-      frameId = fr.frame
-      ccc += 1
-      print("frame: {0}".format(fr.frame))
-      #---------------------------------------------------------
-      # build self.com_pair_dist_matrix for the current matrix
-      #----------------------------------------------
-      self.build_com_pair_dist_matrix(resid_list, segid_list, extra_criteria)
-      #------------------
-      #  initialize
-      #-----------------------
-      if frameId == 1:
-        self.commute_time = numpy.zeros(numpy.shape(self.com_pair_dist_matrix), dtype=numpy.float32)
-      #-----------------------------------
-      self.commute_time += self.com_pair_dist_matrix
-    #----------------------------
-    # compute the average
-    #-----------------------------------
-    self.commute_time /= ccc
-
-  def save_commute_time(self, filename, output_dir="./"):
-    """
-    Save commute time into [filename].h5
-    """
-    output_data = pandas.DataFrame(self.commute_time, columns=self.resid_list)
-    filename += ".h5"
-    current_dir = os.path.realpath(output_dir) # get current path
-    output_filename = os.path.join(current_dir, filename)
-    output_data.to_hdf(output_filename,'data')
-
-
-
-
 
 
 
@@ -463,10 +426,20 @@ class Allostery(object):
     for frameId in range(0,self.total_numFrames):
       self._build_pairwise_distance_com_matrix()
       self.commute_time_matrix += self.pairComMatrix
-      self.next_frame()
+      # make sure this loop does not attempt to advance to an nonexistent frame
+      if frameId + 1 < self.total_numFrames:
+        self.next_frame()
     self.commute_time_matrix /= self.total_numFrames
 
     
-
+  def save_commute_time(self, filename, output_dir="./"):
+    """
+    Save commute time into [filename].h5
+    """
+    output_data = pandas.DataFrame(self.commute_time_matrix, columns=self.ResIdList)
+    filename += ".h5"
+    current_dir = os.path.realpath(output_dir) # get current path
+    output_filename = os.path.join(current_dir, filename)
+    output_data.to_hdf(output_filename,'data')
 
 
