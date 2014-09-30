@@ -41,12 +41,19 @@ class UserData(object):
     """
     self.userDataObj = Proxy_MDAnalysis(psf_filename,trajectory_filename)
 
-  def numResiduesSelected(self):
+  def get_current_frameId(self):
+    """
+    Role: get the ID of the current trajectory frame
+    :return: Int scalar
+    """
+    return self.current_frameId
+
+  def get_numResiduesSelected(self):
     """
     Role count the number of residues selected
     :return: scalar (number of residues in self.selectedAtoms
     """
-    return self.userDataObj.numberResiduesSelected()
+    return self.userDataObj.get_numberResiduesSelected()
 
   def select(self, selection_string):
     """
@@ -65,6 +72,18 @@ class UserData(object):
     self.comMatrix = self.userDataObj.selected_centerOfMasses()
     return self.comMatrix
 
+  def next_frame(self):
+    """
+    Role: move on to the next traectory frame
+    :return: None
+    """
+    self.userDataObj.next_frame()
+
+  def get_current_frameId(self):
+    return self.userDataObj.get_current_frameId()
+
+  def get_total_numFrames(self):
+    return self.userDataObj.get_total_numFrames()
 
 #---------------------------------------------------------------------------
 #                 [[[ Proxy for MDAnalysis ]]]
@@ -88,6 +107,8 @@ class Proxy_MDAnalysis(object):
     :rtype : MDAnalysis universe object
     """
     self.userData = mda.Universe(psf_filename, trajectory_filename)
+    self.current_frameId = 0
+    self.total_numFrames = self.userData.trajectory.numframes
 
   def select(self, selection_string):
     """
@@ -101,23 +122,52 @@ class Proxy_MDAnalysis(object):
     else:
       return self.selectedAtoms
 
-  def numberResiduesSelected(self):
+
+  def get_numberResiduesSelected(self):
     """
     Role: count the number of residues in the current atom selection
     :return scalar (number of residues)
     """
     return self.selectedAtoms.numberOfResidues()
 
-  def selected_centerOfMasses(self,pbc=True):
+  def selected_centerOfMasses(self,numericType=numpy.float32):
     """
     Role: calculate the center of mass of residueObj
     :return numpy array [shape: (3,)]
     """
-    self.centerOfMasses = numpy.zeros((self.numberResiduesSelected(), 3))
-    for _ccc in range(0,self.numberResiduesSelected()):
+    self.centerOfMasses = numpy.zeros((self.get_numberResiduesSelected(), 3), dtype=numericType)
+    for _ccc in range(0,self.get_numberResiduesSelected()):
       _residue = self.selectedAtoms.residues[_ccc]
       self.centerOfMasses[_ccc,:] = _residue.centerOfMass()
     return self.centerOfMasses
+
+  def next_frame(self):
+    """
+    Role: move on to the next trajectory frame
+    :return None
+    """
+    if self.current_frameId + 1 < self.total_numFrames:
+      self.current_frameId += 1
+      self.userData.trajectory[self.current_frameId]
+    else:
+      msg = "Already reached the last frame!"
+      raise UserWarning(msg)
+
+
+  def get_total_numFrames(self):
+    """
+    Role: get total number of frames in the trajectory
+    :return: Int scalar
+    """
+    return self.total_numFrames
+
+  def get_current_frameId(self):
+    """
+    Role: get the current frame ID
+    :return Int scalar
+    """
+    return self.current_frameId
+
 
 
 
@@ -197,73 +247,26 @@ class MDAnalysis_Style_Selection(object):
 
 
 #============================================================================
-#               [[[ Module: tools for data analysis ]]]
+#               [[[ Interface: tools for data analysis ]]]
 #============================================================================
 class AnalysisTools(object):
   """
   Role: provide an interface to all analysis tools
   """
-  def set_selection_str(self, keyword, member_list):
-    """
-    return of string like this "(segid 1 or segid 2)",
-    where keyword is "segid" and member_list is [1,2]
-    """
-    S = []
-    for member in member_list:
-      S.append("{0} {1}".format(keyword, member))
-    return "({0})".format(" or ".join(S))
-
-  def set_basal_selection(self, segid_list, extra_criteria="all"):
-    """
-    Set up base selection string using segid's, [and extra_criteria],
-    to be used for residue pairwise distance
-    calculation.
-    """
-
-    self.segid_list = segid_list
-    self.extra_criteria = extra_criteria
-    S  = []
-    S.append(self.set_selection_str("segid", segid_list))
-    self.basal_selection_str = " and ".join(S)
-    self.basal_selection_str += " and ({0})".format(extra_criteria)
 
 
-
-  def build_com_coords(self, resid_list, segid_list, extra_criteria="all"):
-    """
-    build an Nx3 matrix of center of mass coordinates for selected residues in resid_list
-    """
-    self.set_basal_selection(segid_list, extra_criteria)
-    self.resid_list = resid_list
-    N = len(self.resid_list)
-    self.com_coords = numpy.zeros((N,3), dtype=numpy.float32)
-    ccc = 0 # counter
-    for resid in self.resid_list:
-      selection_str = self.basal_selection_str + " and resnum {0}".format(resid)
-      tmp_selection = self.universe.selectAtoms(selection_str)
-      #------------------------------------------------
-      # in case zero atoms got selected
-      #------------------------------------------------
-      if tmp_selection.numberOfAtoms() == 0:
-        msg = "atom selection [{0}] yields zero atoms".format(selection_str)
-        raise UserWarning(msg)
-      #--------------------------------------------------
-      X = tmp_selection.get_positions()
-      M = tmp_selection.masses()
-      self.com_coords[ccc,:] = tmp_selection.centerOfMass(pbc=True)
-      ccc += 1
-
-  def build_com_pair_dist_matrix(self, resid_list, segid_list, extra_criteria="all"):
+  @classmethod
+  def pairwise_distances(cls, com_matrix):
     """
     build pair-wise distance matrix for center of mass coordinates
     """
-    self.build_com_coords(resid_list, segid_list, extra_criteria)
     #-----------------
     # CALL MDAnalysis.core.distances.distance_array
     # instead of the MDAnalysis.core.parallel.distances (which requires inputs to be of Cython DTYPE_t type)
-    self.com_pair_dist_matrix = mda.core.distances.distance_array(self.com_coords, self.com_coords)
+    return mda.core.distances.distance_array(com_matrix, com_matrix)
 
-  def get_commute_time(self, resid_list, segid_list, extra_criteria="all"):
+  @classmethod
+  def get_commute_time(cls, ):
     """
     build commute time matrix based on pair-wise com distance matrix
     """
@@ -358,7 +361,7 @@ class Allostery(object):
     self.selection_string = " and ".join(S)
     self.userData.select(self.selection_string)
 
-  def build_com_matrix(self):
+  def _build_com_matrix(self):
     """
     Role: build the center of mass matrix for selected atoms
     :return: numpy matrix (shape: Nx3)
@@ -366,8 +369,40 @@ class Allostery(object):
     self.comMatrix = self.userData.build_com_matrix()
     print("comMatrx\n",self.comMatrix)
 
+  def _build_pairwise_distance_com_matrix(self):
+    """
+    Role: build the pair-wise distance matrix using center of mass
+          matrix
+    :return: None
+    """
+    self._build_com_matrix()
+    self.pairComMatrix = AnalysisTools.pairwise_distances(self.comMatrix)
+    print("pairComMatrix\n",self.pairComMatrix)
 
+  def next_frame(self):
+    """
+    Role: move on to next trajectory frame
+    :return: None
+    """
+    self.userData.next_frame()
 
+  def get_number_selected_residues(self):
+    return self.userData.get_number_selected_residues()
+
+  def get_commute_time_matrix(self):
+    """
+    Role: compute the commute time matrix
+    :return: numpy matrix
+    """
+    self.total_numFrames = self.userData.get_total_numFrames()
+    _N = self.userData.get_numResiduesSelected()
+    self.commute_time_matrix = numpy.zeros((_N,_N), dtype=numpy.float32)
+
+    for frameId in range(0,self.total_numFrames):
+      self._build_pairwise_distance_com_matrix()
+      self.commute_time_matrix += self.pairComMatrix
+      self.next_frame()
+    self.commute_time_matrix /= self.total_numFrames
 
     
 
