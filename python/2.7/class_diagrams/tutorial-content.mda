@@ -1,0 +1,19 @@
+
+0ckage ${c.owner.getFullyQualifiedName(".")};
+/**
+* This class was generated automatically thanks to any
+
+*/
+public class ${c.name} {
+	<% c.attributes.each { %>
+		${java.attribute(it)}
+	<% } %>
+	
+	<% c.attributes.each { %>
+		${java.getter(it)}
+	<% } %>
+	
+	<% c.attributes.each { %>
+		${java.setter(it)}
+	<% } %>
+}
