@@ -39,6 +39,7 @@ class TestAllostery(unittest.TestCase):
       self.segid_list = ['O1']
       self.extra_criteria = "not name H*"
       self.answer_key_filename = "sod_comdist.dat"
+
     elif case == 2:
       trajectory_name = "segA3.pdb"
       psf_name = "segA3.psf"
@@ -91,21 +92,25 @@ class TestAllostery(unittest.TestCase):
     print("\t[[[ Testing build_com_matrix() ]]]")
     N = len(self.resid_list)
     self.test_atom_selection_string()
-    self.allos.build_com_matrix()
+    self.allos._build_com_matrix()
     self.assertEqual(numpy.shape(self.allos.comMatrix), (N,3))
 
 
-  @unittest.skip("tmp")
-  def test_build_pair_dist_matrix(self):
-    self.allos.build_com_pair_dist_matrix(self.resid_list, self.segid_list, self.extra_criteria)
+  def test_build_pair_dist_com_matrix(self):
+    self.test_atom_selection_string()
+    print("\t[[[ Testing build_pairwise_dist_com_matrix() ]]]")
+    self.allos._build_pairwise_distance_com_matrix()
     filename = os.path.join(self.data_dir, self.answer_key_filename)
     key = numpy.loadtxt(filename)
-    self.assertTrue((numpy.abs(self.allos.com_pair_dist_matrix - key) < self.tol).all())
+    print("Expected pairComMatrix\n", key)
+    self.assertTrue((numpy.abs(self.allos.pairComMatrix - key) < self.tol).all())
 
   @unittest.skip("tmp")
-  def test_get_commute_time(self):
-    self.allos.get_commute_time(self.resid_list, self.segid_list, self.extra_criteria)
-    print("commute time\n", self.allos.commute_time)
+  def test_get_commute_time_matrix(self):
+    self.test_atom_selection_string()
+    print("\t[[[ Testing get_commute_time_matrix() ]]]")
+    self.allos.get_commute_time_matrix()
+    print("commute time\n", self.allos.commute_time_matrix)
 
   @unittest.skip("tmp")
   def test_save_commute_time(self):
