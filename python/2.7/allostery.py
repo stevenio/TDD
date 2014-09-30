@@ -50,10 +50,17 @@ class UserData(object):
 
   def get_numResiduesSelected(self):
     """
-    Role count the number of residues selected
+    Role: count the number of residues selected
     :return: scalar (number of residues in self.selectedAtoms
     """
     return self.userDataObj.get_numberResiduesSelected()
+
+  def get_numAtomsSelected(self):
+    """
+    Role: count the number of atoms selected
+    :return: Int scalar
+    """
+    return self.userDataObj.get_numberAtomsSelected()
 
   def select(self, selection_string):
     """
@@ -129,6 +136,13 @@ class Proxy_MDAnalysis(object):
     :return scalar (number of residues)
     """
     return self.selectedAtoms.numberOfResidues()
+
+  def get_numberAtomsSelected(self):
+    """
+    Role: count the number of atoms selected
+    :return: Int scalar
+    """
+    return self.selectedAtoms.numberOfAtoms()
 
   def selected_centerOfMasses(self,numericType=numpy.float32):
     """
@@ -367,7 +381,7 @@ class Allostery(object):
     :return: numpy matrix (shape: Nx3)
     """
     self.comMatrix = self.userData.build_com_matrix()
-    print("comMatrx\n",self.comMatrix)
+    # print("comMatrx\n",self.comMatrix)
 
   def _build_pairwise_distance_com_matrix(self):
     """
@@ -377,7 +391,7 @@ class Allostery(object):
     """
     self._build_com_matrix()
     self.pairComMatrix = AnalysisTools.pairwise_distances(self.comMatrix)
-    print("pairComMatrix\n",self.pairComMatrix)
+
 
   def next_frame(self):
     """
@@ -388,6 +402,9 @@ class Allostery(object):
 
   def get_number_selected_residues(self):
     return self.userData.get_number_selected_residues()
+
+  def get_number_selected_atoms(self):
+    return self.userData.get_numAtomsSelected()
 
   def get_commute_time_matrix(self):
     """
