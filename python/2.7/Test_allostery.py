@@ -56,6 +56,7 @@ class TestAllostery(unittest.TestCase):
       self.comdist_data_filename = "segA3_comdist.dat"
       self.com_data_filename = "segA3_com.dat"
       self.expected_numAtomsSelected = 18
+      self.coord_filename = "segA3_coord.dat"
 
     elif case == 3:
       trajectory_name = "segA.pdb"
@@ -101,7 +102,16 @@ class TestAllostery(unittest.TestCase):
     nonexistent_segid = [-1]
     self.assertRaises(UserWarning, self.allos.select, nonexistent_resid, nonexistent_segid)
 
+  def test_reading_atom_coords(self):
+    self.test_atom_selection_string()
+    print("\t[[[ Testing reading atom coordinates ]]]")
+    coords = self.allos.get_selected_coords()
+    filename = os.path.join(self.data_dir, self.coord_filename)
+    expected = numpy.loadtxt(filename)
+    self.assertTrue((numpy.abs(coords-expected)<self.tol).all())
+  
 
+  @unittest.skip("tmp")
   def test_build_com_matrix(self):
     print("\t[[[ Testing build_com_matrix() ]]]")
     N = len(self.resid_list)

@@ -92,6 +92,13 @@ class UserData(object):
   def get_total_numFrames(self):
     return self.userDataObj.get_total_numFrames()
 
+  def get_selected_coords(self):
+    """
+    Role: get coordinates of selected atoms
+    :return: numpy array
+    """
+    return self.userDataObj.get_selected_coords()
+
 #---------------------------------------------------------------------------
 #                 [[[ Proxy for MDAnalysis ]]]
 #---------------------------------------------------------------------------
@@ -143,6 +150,13 @@ class Proxy_MDAnalysis(object):
     :return: Int scalar
     """
     return self.selectedAtoms.numberOfAtoms()
+
+  def get_selected_coords(self):
+    """
+    Role: get the coordinates of selected atoms
+    :return: numpy array
+    """
+    return self.selectedAtoms.coordinates()
 
   def selected_centerOfMasses(self,numericType=numpy.float32):
     """
@@ -374,6 +388,13 @@ class Allostery(object):
 
     self.selection_string = " and ".join(S)
     self.userData.select(self.selection_string)
+
+  def get_selected_coords(self):
+    """
+    Role: get the coordinates of selected atoms
+    :return: numpy array
+    """
+    return self.userData.get_selected_coords()
 
   def _build_com_matrix(self):
     """
