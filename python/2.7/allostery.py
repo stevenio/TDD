@@ -62,6 +62,13 @@ class UserData(object):
     """
     return self.userDataObj.get_numberAtomsSelected()
 
+  def get_selected_mass(self):
+    """
+    Role: get the mass of selected atoms
+    :return: numpy array
+    """
+    return  self.userDataObj.get_selected_mass()
+
   def select(self, selection_string):
     """
     Role: use delegation to select part of the MD system
@@ -76,6 +83,7 @@ class UserData(object):
     Role: build a matrix (Nx3) of center of mass coordinates
     :return: numpy matrix (shape: Nx3)
     """
+    _totalMass = numpy.sum(self.get_selected_mass())
     self.comMatrix = self.userDataObj.selected_centerOfMasses()
     return self.comMatrix
 
@@ -136,6 +144,12 @@ class Proxy_MDAnalysis(object):
     else:
       return self.selectedAtoms
 
+  def get_selected_mass(self):
+    """
+    Role: get the mass of selected atoms
+    :return: numpy array
+    """
+    return self.selectedAtoms.masses()
 
   def get_numberResiduesSelected(self):
     """
@@ -163,10 +177,13 @@ class Proxy_MDAnalysis(object):
     Role: calculate the center of mass of residueObj
     :return numpy array [shape: (3,)]
     """
+    _num = 0
     self.centerOfMasses = numpy.zeros((self.get_numberResiduesSelected(), 3), dtype=numericType)
     for _ccc in range(0,self.get_numberResiduesSelected()):
-      _residue = self.selectedAtoms.residues[_ccc]
+      _residue = self.selectedAtoms.residues[_ccc].selectAtoms("not name H*")
       self.centerOfMasses[_ccc,:] = _residue.centerOfMass()
+      _num += _residue.numberOfAtoms()
+    print("****** number of atoms during COM",_num)
     return self.centerOfMasses
 
   def next_frame(self):
@@ -395,6 +412,13 @@ class Allostery(object):
     :return: numpy array
     """
     return self.userData.get_selected_coords()
+
+  def get_selected_mass(self):
+    """
+    Role: get the masses of selected atoms
+    :return: numpy array
+    """
+    return self.userData.get_selected_mass()
 
   def _build_com_matrix(self):
     """

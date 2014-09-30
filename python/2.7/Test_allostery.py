@@ -57,6 +57,7 @@ class TestAllostery(unittest.TestCase):
       self.com_data_filename = "segA3_com.dat"
       self.expected_numAtomsSelected = 18
       self.coord_filename = "segA3_coord.dat"
+      self.mass_filename = "segA3_mass.dat"
 
     elif case == 3:
       trajectory_name = "segA.pdb"
@@ -109,9 +110,16 @@ class TestAllostery(unittest.TestCase):
     filename = os.path.join(self.data_dir, self.coord_filename)
     expected = numpy.loadtxt(filename)
     self.assertTrue((numpy.abs(coords-expected)<self.tol).all())
-  
 
-  @unittest.skip("tmp")
+  def test_get_selected_mass(self):
+    self.test_atom_selection_string()
+    print("\t[[[ Testing get mass of selected atoms ]]]")
+    masses = self.allos.get_selected_mass()
+    filename = os.path.join(self.data_dir, self.mass_filename)
+    expected = numpy.loadtxt(filename)
+    self.assertTrue(((masses - expected)<self.tol).all())
+
+
   def test_build_com_matrix(self):
     print("\t[[[ Testing build_com_matrix() ]]]")
     N = len(self.resid_list)

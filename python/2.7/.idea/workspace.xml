@@ -12,7 +12,7 @@
   </component>
   <component name="ChangesViewManager" flattened_view="true" show_ignored="false" />
   <component name="CoverageDataManager">
-    <SUITE FILE_PATH="coverage/2.7$Unittests_in_Test_allostery.coverage" NAME="Unittests in Test_allostery Coverage Results" MODIFIED="1412118274250" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/2.7$Unittests_in_Test_allostery.coverage" NAME="Unittests in Test_allostery Coverage Results" MODIFIED="1412119955864" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/2.7$Unittest_TestAllostery_test_build_com_matrix.coverage" NAME="Unittest TestAllostery.test_build_com_matrix Coverage Results" MODIFIED="1412114498339" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/2.7$toy.coverage" NAME="toy Coverage Results" MODIFIED="1412034874909" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
@@ -28,21 +28,21 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="Test_allostery.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="Test_allostery.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Test_allostery.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.53289473" vertical-offset="1392" max-vertical-offset="2490">
-              <caret line="111" column="2" selection-start-line="111" selection-start-column="2" selection-end-line="111" selection-end-column="2" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="1494" max-vertical-offset="2610">
+              <caret line="121" column="0" selection-start-line="121" selection-start-column="0" selection-end-line="121" selection-end-column="0" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="allostery.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="allostery.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/allostery.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-13.538462" vertical-offset="5603" max-vertical-offset="6810">
-              <caret line="397" column="0" selection-start-line="397" selection-start-column="0" selection-end-line="397" selection-end-column="0" />
+            <state vertical-scroll-proportion="0.627907" vertical-offset="2460" max-vertical-offset="7170">
+              <caret line="182" column="75" selection-start-line="182" selection-start-column="75" selection-end-line="182" selection-end-column="75" />
               <folding />
             </state>
           </provider>
@@ -97,8 +97,8 @@
         <option value="/Python Fragment (allostery.py:872).py" />
         <option value="$PROJECT_DIR$/backup_Allostery.py" />
         <option value="$PROJECT_DIR$/toy.py" />
-        <option value="$PROJECT_DIR$/allostery.py" />
         <option value="$PROJECT_DIR$/Test_allostery.py" />
+        <option value="$PROJECT_DIR$/allostery.py" />
       </list>
     </option>
   </component>
@@ -661,18 +661,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/allostery.py">
+    <entry file="file://$PROJECT_DIR$/Test_allostery.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-13.538462" vertical-offset="5603" max-vertical-offset="6810">
-          <caret line="397" column="0" selection-start-line="397" selection-start-column="0" selection-end-line="397" selection-end-column="0" />
+        <state vertical-scroll-proportion="0.0" vertical-offset="1494" max-vertical-offset="2610">
+          <caret line="121" column="0" selection-start-line="121" selection-start-column="0" selection-end-line="121" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Test_allostery.py">
+    <entry file="file://$PROJECT_DIR$/allostery.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.53289473" vertical-offset="1392" max-vertical-offset="2490">
-          <caret line="111" column="2" selection-start-line="111" selection-start-column="2" selection-end-line="111" selection-end-column="2" />
+        <state vertical-scroll-proportion="0.627907" vertical-offset="2460" max-vertical-offset="7170">
+          <caret line="182" column="75" selection-start-line="182" selection-start-column="75" selection-end-line="182" selection-end-column="75" />
           <folding />
         </state>
       </provider>
