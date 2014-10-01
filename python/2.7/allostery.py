@@ -12,16 +12,16 @@ from __future__ import print_function, division
 #============================================================
 # External Module Dependencies
 #============================================================
-import prody
+# import prody
 import pandas
-import MDAnalysis as mda
-import MDAnalysis.core.parallel.distances as mda_dist
-import numpy, scipy
+import MDAnalysis
+import MDAnalysis.core.parallel.distances as distance_module
+import numpy
 import os
 #--------------------
 # my modules
 #--------------------
-import distmodule
+# import distmodule
 #============================================================
 
 
@@ -41,19 +41,14 @@ class UserData(object):
     """
     self.userDataObj = Proxy_MDAnalysis(psf_filename,trajectory_filename)
 
-  def get_current_frameId(self):
-    """
-    Role: get the ID of the current trajectory frame
-    :return: Int scalar
-    """
-    return self.current_frameId
 
-  def get_numResiduesSelected(self):
+
+  def get_number_of_selected_residues(self):
     """
     Role: count the number of residues selected
     :return: scalar (number of residues in self.selectedAtoms
     """
-    return self.userDataObj.get_numberResiduesSelected()
+    return self.userDataObj.get_number_of_selected_residues()
 
   def get_numAtomsSelected(self):
     """
@@ -78,12 +73,11 @@ class UserData(object):
     self.userDataObj.select(selection_string)
 
 
-  def build_com_matrix(self):
+  def get_selected_com_coords(self):
     """
     Role: build a matrix (Nx3) of center of mass coordinates
     :return: numpy matrix (shape: Nx3)
     """
-    _totalMass = numpy.sum(self.get_selected_mass())
     self.comMatrix = self.userDataObj.selected_centerOfMasses()
     return self.comMatrix
 
@@ -107,6 +101,29 @@ class UserData(object):
     """
     return self.userDataObj.get_selected_coords()
 
+  def iter_get_selected_coords(self, frame_start, frame_end, frame_skip=1):
+    """
+    Role: a generator function that returns the coordinates of
+          user-selected atoms iteratively for all trajectory frames
+    :return: numpy array (shape: Nx3)
+    """
+    return self.userDataObj.iter_get_selected_coords(frame_start, frame_end, frame_skip)
+
+  def iter_get_selected_com_coords(self, frame_start=0, frame_end=None, frame_skip=1):
+    """
+    Role: a generator function that returns the center of mass coordinates
+          of selected atoms
+    :return: numpy array (shape: Nx3, N is the number of selected residues)
+    """
+    if frame_end == None:
+      frame_end = self.get_total_numFrames()
+    for frameId in range(frame_start, frame_end, frame_skip):
+      self.userDataObj.go_to_frame(frameId) # update frame
+      yield self.get_selected_com_coords()
+
+
+
+
 #---------------------------------------------------------------------------
 #                 [[[ Proxy for MDAnalysis ]]]
 #---------------------------------------------------------------------------
@@ -128,7 +145,7 @@ class Proxy_MDAnalysis(object):
     Goal: create an universe object based on user's files
     :rtype : MDAnalysis universe object
     """
-    self.userData = mda.Universe(psf_filename, trajectory_filename)
+    self.userData = MDAnalysis.Universe(psf_filename, trajectory_filename)
     self.current_frameId = 0
     self.total_numFrames = self.userData.trajectory.numframes
 
@@ -152,7 +169,7 @@ class Proxy_MDAnalysis(object):
     """
     return self.selectedAtoms.masses()
 
-  def get_numberResiduesSelected(self):
+  def get_number_of_selected_residues(self):
     """
     Role: count the number of residues in the current atom selection
     :return scalar (number of residues)
@@ -179,8 +196,8 @@ class Proxy_MDAnalysis(object):
     :return numpy array [shape: (3,)]
     """
 
-    self.centerOfMasses = numpy.zeros((self.get_numberResiduesSelected(), 3), dtype=numericType)
-    for _ccc in range(0,self.get_numberResiduesSelected()):
+    self.centerOfMasses = numpy.zeros((self.get_number_of_selected_residues(), 3), dtype=numericType)
+    for _ccc in range(0,self.get_number_of_selected_residues()):
       # note: due to a bug in the implementation of MDAnalysis,
       #       self.selectedAtoms.residues[0] will return all the atoms in residue0
       #       of the original PDB, not from the selected atom set self.selectedAtoms
@@ -200,6 +217,32 @@ class Proxy_MDAnalysis(object):
       msg = "Already reached the last frame!"
       msg += "(current frameId = {0}/{1})".format(self.current_frameId, self.total_numFrames)
       raise UserWarning(msg)
+
+  def go_to_frame(self, frameId):
+    """
+    Role: go to a specific trajectory frame
+    :param frameId: Int scalar
+    :return: None
+    """
+    if frameId < 0 or frameId >= self.total_numFrames:
+      msg = "frameId must be within [0,{0})".format(self.total_numFrames)
+      msg += ", but you specified frameId = {0}".format(frameId)
+      raise UserWarning(msg)
+    self.userData.trajectory[frameId]
+
+  def iter_get_selected_coords(self, frame_start, frame_end, frame_skip=1):
+    """
+    Role: a generator function that returns the coordinates
+          of selected atoms for all trajectory frames
+    :param frame_start: starting frame (0-based index)
+           frame_end: last frame
+           frame_skip: interval between frames
+    :return: numpy array
+    """
+    for frameId in xrange(frame_start, frame_end, frame_skip):
+      self.userData.trajectory[frameId]
+      yield self.selectedAtoms.coordinates()
+
 
 
   def get_total_numFrames(self):
@@ -301,8 +344,6 @@ class AnalysisTools(object):
   """
   Role: provide an interface to all analysis tools
   """
-
-
   @classmethod
   def pairwise_distances(cls, com_matrix):
     """
@@ -311,11 +352,61 @@ class AnalysisTools(object):
     #-----------------
     # CALL MDAnalysis.core.distances.distance_array
     # instead of the MDAnalysis.core.parallel.distances (which requires inputs to be of Cython DTYPE_t type)
-    return mda.core.distances.distance_array(com_matrix, com_matrix)
+    return distance_module.distance_array(com_matrix, com_matrix)
+
+  @classmethod
+  def commute_time(cls,com_coords_iterator, number_of_rows):
+    """
+    Role: compute the commute time matrix
+    :return: numpy matrix
+    """
+    commute_time_matrix = numpy.zeros((number_of_rows, number_of_rows), dtype=numpy.float32)
+    numberFrames = 0
+    for com_coords in com_coords_iterator:
+      commute_time_matrix += com_coords
+      numberFrames += 1
+    commute_time_matrix /= numberFrames
+    return commute_time_matrix
+
+
+#============================================================================
+#               [[[ Interface: Analysis Data IO]]]
+#============================================================================
+class DataIO(object):
+  """
+  Role: Write/Read data generated by the analyses
+  """
+  @classmethod
+  def write(cls,user_data,column_header_array,output_filename, output_data_tag):
+    """
+    Role: write data into an output file
+    """
+    Proxy_Pandas.write(user_data,column_header_array,output_filename, output_data_tag)
+
+
+class Proxy_Pandas(object):
+  """
+  Role: a proxy interface to the Pandas module
+  :return None
+  """
+  @classmethod
+  def write(cls,user_data,column_header_array,output_filename, output_data_tag="data"):
+    """
+    Role: write data into an output file
+    """
+    output_filename += ".h5"
+    output_data = pandas.DataFrame(user_data, columns=column_header_array)
+    output_data.to_hdf(output_filename, output_data_tag)
 
 
 
 
+
+
+
+#============================================================================
+#               [[[ Client(View): User Interface Frontend ]]]
+#============================================================================
 class Allostery(object):
   """
   Goal: get the allosteric relations between residues
@@ -335,6 +426,7 @@ class Allostery(object):
     self.trajectory_filename = os.path.join(data_src_dir, trajectory_filename)
     # use delegation to read user data
     self.userData = UserData(self.psf_filename, self.trajectory_filename)
+    self.total_numFrames = self.userData.get_total_numFrames()
 
 
   def select(self, resid_list=None, segid_list=None, extra_criteria=None):
@@ -388,7 +480,7 @@ class Allostery(object):
     Role: build the center of mass matrix for selected atoms
     :return: numpy matrix (shape: Nx3)
     """
-    self.comMatrix = self.userData.build_com_matrix()
+    self.comMatrix = self.userData.get_selected_com_coords()
     # print("comMatrx\n",self.comMatrix)
 
   def _build_pairwise_distance_com_matrix(self):
@@ -400,7 +492,6 @@ class Allostery(object):
     self._build_com_matrix()
     self.pairComMatrix = AnalysisTools.pairwise_distances(self.comMatrix)
 
-
   def next_frame(self):
     """
     Role: move on to next trajectory frame
@@ -408,8 +499,28 @@ class Allostery(object):
     """
     self.userData.next_frame()
 
+  def iter_get_selected_coords(self, frame_start=0, frame_end=None, frame_skip=1):
+    """
+    Role: a generator function that returns the coordinates of
+          user-selected atoms iteratively for all trajectory frames
+    :return: numpy array (shape: Nx3)
+    """
+    if frame_end == None:
+      frame_end = self.total_numFrames
+    return self.userData.iter_get_selected_coords(frame_start, frame_end, frame_skip)
+
+  def iter_get_selected_com_coords(self, frame_start=0, frame_end=None, frame_skip=1):
+    """
+    Role: a generator function that returns the coordinates of
+          user-selected atoms iteratively for all trajectory frames
+    :return: numpy array (shape: Nx3)
+    """
+    if frame_end == None:
+      frame_end = self.total_numFrames
+    return self.userData.iter_get_selected_com_coords(frame_start, frame_end, frame_skip)
+
   def get_number_selected_residues(self):
-    return self.userData.get_number_selected_residues()
+    return self.userData.get_number_of_selected_residues()
 
   def get_number_selected_atoms(self):
     return self.userData.get_numAtomsSelected()
@@ -417,29 +528,19 @@ class Allostery(object):
   def get_commute_time_matrix(self):
     """
     Role: compute the commute time matrix
-    :return: numpy matrix
+    :return: None
     """
-    self.total_numFrames = self.userData.get_total_numFrames()
-    _N = self.userData.get_numResiduesSelected()
-    self.commute_time_matrix = numpy.zeros((_N,_N), dtype=numpy.float32)
-
-    for frameId in range(0,self.total_numFrames):
-      self._build_pairwise_distance_com_matrix()
-      self.commute_time_matrix += self.pairComMatrix
-      # make sure this loop does not attempt to advance to an nonexistent frame
-      if frameId + 1 < self.total_numFrames:
-        self.next_frame()
-    self.commute_time_matrix /= self.total_numFrames
+    self.commute_time_matrix = AnalysisTools.commute_time(self.iter_get_selected_com_coords(),
+                                                          self.get_number_selected_residues())
 
     
   def save_commute_time(self, filename, output_dir="./"):
     """
-    Save commute time into [filename].h5
+    Save commute time into [filename]
     """
-    output_data = pandas.DataFrame(self.commute_time_matrix, columns=self.ResIdList)
-    filename += ".h5"
+    data_column_header = self.ResIdList
     current_dir = os.path.realpath(output_dir) # get current path
     output_filename = os.path.join(current_dir, filename)
-    output_data.to_hdf(output_filename,'data')
+    DataIO.write(self.commute_time_matrix, data_column_header, output_filename, 'data')
 
 
